@@ -3,9 +3,35 @@
 [![CI](https://github.com/PlatformStackPulse/tf-atom-ssoadmin-account-assignment-aws/actions/workflows/ci.yml/badge.svg)](https://github.com/PlatformStackPulse/tf-atom-ssoadmin-account-assignment-aws/actions/workflows/ci.yml)
 ![Terraform](https://img.shields.io/badge/terraform-%3E%3D1.6.0-blueviolet)
 
-## Purpose
+Terraform atom that assigns an AWS IAM Identity Center (SSO) permission set to a principal (user or group) in a target AWS account.
 
-AWS SSO account assignment linking a permission set to a principal (user/group) in a target account.
+## Features
+
+- Creates a single `aws_ssoadmin_account_assignment` binding a permission set to a principal in one target account.
+- Supports both `USER` and `GROUP` principals via `principal_type` (default `GROUP`).
+- Input validation on all identifiers: non-empty ARNs/principal id and a 12-digit `target_account_id`.
+- `enabled` toggle (via [tf-label](https://github.com/PlatformStackPulse/tf-label)) to create zero resources when disabled.
+- Consistent naming/tagging through the standard tf-label `context` interface.
+
+## Usage
+
+```hcl
+module "sso_account_assignment" {
+  source = "git::https://github.com/PlatformStackPulse/tf-atom-ssoadmin-account-assignment-aws.git?ref=v1.0.0"
+
+  # tf-label identity
+  namespace = "eg"
+  stage     = "prod"
+  name      = "admins"
+
+  # Required inputs
+  instance_arn       = "arn:aws:sso:::instance/ssoins-0123456789abcdef"
+  permission_set_arn = "arn:aws:sso:::permissionSet/ssoins-0123456789abcdef/ps-0123456789abcdef"
+  principal_id       = "11111111-2222-3333-4444-555555555555"
+  principal_type     = "GROUP"
+  target_account_id  = "123456789012"
+}
+```
 
 ## Module Documentation
 
@@ -68,3 +94,23 @@ AWS SSO account assignment linking a permission set to a principal (user/group) 
 |------|-------------|
 | <a name="output_id"></a> [id](#output\_id) | ID of the account assignment |
 <!-- END_TF_DOCS -->
+
+## Tests
+
+Unit tests run against a mock AWS provider (no real AWS calls) and assert on
+plan-known values (the tf-label `id`, resource count, and input pass-throughs).
+
+```bash
+terraform init -backend=false
+terraform test -test-directory=tests/unit
+# or
+make test-unit
+```
+
+Integration tests (require real AWS credentials) live under `tests/integration`:
+
+```bash
+terraform test -test-directory=tests/integration
+# or
+make test-integration
+```
